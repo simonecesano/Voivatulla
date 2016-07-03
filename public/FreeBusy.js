@@ -123,14 +123,12 @@ FreeBusy.prototype.slot = function() {
 
 FreeBusy.prototype.hours = function() {
     var f = this;
-    return _.chain(f.times).map(function(e){ return e.format('hh:mm') }).uniq().value();
-    // return _.chain(f.times).value()
+    return _.chain(f.times).map(function(e){ return e.format('hh:mm') }).uniq().sort(function(e){ return moment(e, 'hh:mm').valueOf() }).value();
 }
 
 FreeBusy.prototype.days = function() {
     var f = this;
     return _.chain(f.times).map(function(e){ return e.format('YYYY-MM-DD') }).uniq().value();
-    // return _.chain(f.times).value()
 }
 
 

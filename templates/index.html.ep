@@ -25,17 +25,31 @@
       font-size: 6px
   }
 </style>
-<script id="day-template" type="text/x-handlebars-template">
-  <table>
-    {{#each days}}
-    <tr>
-      <td>{{@key}}</td>
-      {{#each this}}
-      <td>
-	<div class="time_of_day">{{ this.time_of_day }}</div>
-	<div data-toggle="tooltip" data-delay="50" data-placement="top" title="{{ this.time_of_day }} {{ this.availability_perc }}%" class="bar_outer">
+<script>
+Handlebars.registerHelper('freebusy-at-time', function() {
+    var args = [], options = arguments[arguments.length - 1];
+    var fb = arguments[0], day = arguments[1], hour = arguments[2];
+    if (fb[day][hour]) { return fb[day][hour].availability_perc } else { return 0 }
+});
+Handlebars.registerHelper('moment-format', function() {
+    var date = arguments[0], format = arguments[1];
+    // if (arguments.length > 2) { date = moment(date, arguments[2]) } else { date = moment(date) }
+    date = moment(date)
+    return date.format(format);
+})
 
-	<div class="bar_inner" style="height:{{ this.availability_perc }}px;background-color:red"></div>
+
+</script>
+<script id="day-template" type="text/x-handlebars-template">
+    <table>
+    {{#each days as |day|  }}
+    <tr>
+    <td>{{ moment-format day 'DD-MMM, ddd' }}</td>
+      {{#each ../hours as |hour| }}
+      <td>
+	<div class="time_of_day">{{ hour }}</div>
+	<div data-toggle="tooltip" data-delay="50" data-placement="top" title="{{ hour }} {{ day }} {{ freebusy-at-time ../../by_time day hour }}%" class="bar_outer">
+	<div class="bar_inner" style="height:{{ freebusy-at-time ../../by_time day hour }}px;background-color:red"></div>
       </div></td>
       {{/each}}
     </tr>
@@ -67,21 +81,12 @@
 			    ).fail(function(){ console.log("failed") });
 	    }).value();
 	    $.when.apply($, deferreds).then(function(){
-		var p = _.map(fb.summary, function(e, i) {
-		    var p = _.chain(e).filter(function(t){ return t == 0 }).value().length / e.length
-		    return { time: fb.times[i].format(), availability: p }
-		})
-		console.log(p);
-		_.each(p, function(e) {
-		    e.availability_perc = Math.round(e.availability * 100, 0)
-		    e.time_of_day = moment(e.time).format('HH:mm');
-		});
-		var days = _.groupBy(p, function(k){
-		    return moment(k.time).format('YYYY-MM-DD')
-		})
 		var source   = $("#day-template").html();
 		var template = Handlebars.compile(source);
-		$('#results').html(template({ days: days }))
+		// console.log(fb.days());
+		console.log(fb.hours());
+		
+		$('#results').html(template({ days: fb.days(), hours: fb.hours(), by_time: fb.byTime() }))
 	    });
 	})
     });
