@@ -30,7 +30,7 @@ FreeBusy.prototype.add = function(freebusy) {
     var d = freebusy
     if (_.isString(d)) { d = JSON.parse(d) }
     if(d.freebusy.length > f.summary.length) {
-	console.log("truncating freebusy of " + d.email);
+	// console.log("truncating freebusy of " + d.email);
     };
     d.freebusy = d.freebusy.substring(0, f.summary.length).split('');
     f.emails.push(d.email);
@@ -123,7 +123,7 @@ FreeBusy.prototype.slot = function() {
 
 FreeBusy.prototype.hours = function() {
     var f = this;
-    return _.chain(f.times).map(function(e){ return e.format('hh:mm') }).uniq().sort(function(e){ return moment(e, 'hh:mm').valueOf() }).value();
+    return _.chain(f.times).map(function(e){ return e.format('HH:mm') }).uniq().sort().value();
 }
 
 FreeBusy.prototype.days = function() {
