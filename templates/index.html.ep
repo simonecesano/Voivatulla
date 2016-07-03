@@ -1,0 +1,100 @@
+% layout 'default';
+%= javascript '/static/freebusy.js'
+<style>
+  #results td { padding: 3px }
+  #results tr { border-bottom: thin solid gainsboro } 
+  .bar_outer {
+      float: left;
+      height: 100px;
+      margin: 1px;
+      padding: 0px;
+      width: 12px;
+      text-align: left;
+      position:relative;                 /* added */
+      border-top: solid thin gainsboro;
+  }
+  .bar_inner {
+      position:absolute;                  /* added */
+      bottom:0;                           /* added */
+      left:0;                             /* added */
+      width: 12px;
+      margin: 1px;
+      border: thin white solid;
+  }
+  .time_of_day {
+      font-size: 6px
+  }
+</style>
+<script id="day-template" type="text/x-handlebars-template">
+  <table>
+    {{#each days}}
+    <tr>
+      <td>{{@key}}</td>
+      {{#each this}}
+      <td>
+	<div class="time_of_day">{{ this.time_of_day }}</div>
+	<div data-toggle="tooltip" data-delay="50" data-placement="top" title="{{ this.time_of_day }} {{ this.availability_perc }}%" class="bar_outer">
+
+	<div class="bar_inner" style="height:{{ this.availability_perc }}px;background-color:red"></div>
+      </div></td>
+      {{/each}}
+    </tr>
+    {{/each}}
+  </table>
+</script>
+<script>
+    $(function(){
+	var now = moment().minutes(0).seconds(0);
+	console.log(now.format());
+	var fb = new FreeBusy(now.format(), now.add(3, 'days').format(), 30);
+	fb.workingHours(8, 18, [1, 2, 3, 4, 5]);
+	console.log(Cookies.get());
+	$('#wait, #results').hide();
+	$('#search').click(function(){
+	    $('form').hide();
+	    $('#wait, #results').show();
+	    var names = _.chain($('#names').val().split(/\n|;\s*/)).filter(function(i){ return i.match(/\w/) });
+	    var freebusies = [];
+	    var summary = [];
+	    var k = 0;
+	    var deferreds = names.map(function(i, e){
+		return $.get('/',
+			     { email: i, start: now.format(), end: now.add(14, 'days').format(), interval: 30 },
+			     function(d) {
+				 fb.add(d)
+				 k++
+			     }
+			    ).fail(function(){ console.log("failed") });
+	    }).value();
+	    $.when.apply($, deferreds).then(function(){
+		var p = _.map(fb.summary, function(e, i) {
+		    var p = _.chain(e).filter(function(t){ return t == 0 }).value().length / e.length
+		    return { time: fb.times[i].format(), availability: p }
+		})
+		console.log(p);
+		_.each(p, function(e) {
+		    e.availability_perc = Math.round(e.availability * 100, 0)
+		    e.time_of_day = moment(e.time).format('HH:mm');
+		});
+		var days = _.groupBy(p, function(k){
+		    return moment(k.time).format('YYYY-MM-DD')
+		})
+		var source   = $("#day-template").html();
+		var template = Handlebars.compile(source);
+		$('#results').html(template({ days: days }))
+	    });
+	})
+    });
+</script>
+<div class="col-lg-8 col-xs-offset-2"><h1 class="page-header">Search free slots</h1></div>
+<div class="col-lg-8 col-xs-offset-2">
+  <form>
+    <div class="form-group">
+      <label for="names">Emails</label>
+      <textarea id="names" class="form-control" rows="4"></textarea>
+    </div>
+    <button id="search" type="button" class="btn btn-default">Search</button>
+  </form>
+  <div id="results">
+  </div>
+</div>
