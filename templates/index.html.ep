@@ -59,10 +59,10 @@ Handlebars.registerHelper('moment-format', function() {
 <script>
     $(function(){
 	var now = moment().minutes(0).seconds(0);
-	console.log(now.format());
+	var source   = $("#day-template").html();
+	var template = Handlebars.compile(source);
 	var fb = new FreeBusy(now.format(), now.add(3, 'days').format(), 30);
 	fb.workingHours(8, 18, [1, 2, 3, 4, 5]);
-	console.log(Cookies.get());
 	$('#wait, #results').hide();
 	$('#search').click(function(){
 	    $('form').hide();
@@ -76,16 +76,11 @@ Handlebars.registerHelper('moment-format', function() {
 			     { email: i, start: now.format(), end: now.add(14, 'days').format(), interval: 30 },
 			     function(d) {
 				 fb.add(d)
-				 k++
+				 $('#results').html(template({ days: fb.days(), hours: fb.hours(), by_time: fb.byTime() }))
 			     }
 			    ).fail(function(){ console.log("failed") });
 	    }).value();
 	    $.when.apply($, deferreds).then(function(){
-		var source   = $("#day-template").html();
-		var template = Handlebars.compile(source);
-		// console.log(fb.days());
-		console.log(fb.hours());
-		
 		$('#results').html(template({ days: fb.days(), hours: fb.hours(), by_time: fb.byTime() }))
 	    });
 	})
