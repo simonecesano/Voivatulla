@@ -1,0 +1,88 @@
+% layout 'default';
+%= javascript 'https://cdnjs.cloudflare.com/ajax/libs/URI.js/1.18.1/URI.js'
+%= include 'navbars/tree'
+% unless (param('name')) {
+<div class="col-lg-6 col-xs-offset-3"><h3 class="page-header">Navigate Hierarchy</h3></div>
+<div class="col-lg-6 col-xs-offset-3">
+<form>
+  <div class="form-group">
+    <label for="email">Email address</label>
+    <input type="email" class="form-control" id="email" name="name" placeholder="Email">
+  </div>
+  <button type="submit" class="btn btn-default">Submit</button>
+</form>
+</div>
+ % } else {
+<script id="person-template" type="text/x-handlebars-template">
+  <tr id="{{ id }}" ><td style="padding-left:{{ padding }}em" data-level={{ level }}>{{ name }}</td></tr>    
+</script>
+<style>
+  #org td { white-space: nowrap; font-size: small }
+</style>
+<div class="col-lg-10 col-xs-offset-1"><h3 class="page-header">Navigate Hierarchy</h3></div>
+<div class="col-lg-10 col-xs-offset-1">
+  <table class="table table-striped" id="org">
+    <tbody></tbody>
+  </table>
+</div>
+<script>
+var source   = $("#person-template").html();
+var template = Handlebars.compile(source);
+function recurse_up(url, parent, level){
+    $.post(url.toString(), function(s){
+	var u = url.clone();
+	var parent_id = u.query(true).name.replace(/\W/g, '_');
+	var email = s.boss['t:EmailAddress']
+	u.setSearch('name', email);
+	recurse_up(u, parent, level - 1);
+    });
+};
+
+function recurse_down(url, parent, level){
+    var i = url.clone().query(true).name.replace(/\W/g, '_')
+    var l = level;
+    
+    $.post(url.toString(), function(s){
+	var person_row = $('#' + i);
+	if (person_row.size()) {
+	    person_row.find('td').first().html('<td>'+ s.name + '</td>');
+	    person_row.append('<td>'+ s.title + '</td>');
+	    person_row.append('<td>'+ s.mail['t:EmailAddress'] + '</td>');
+	} else {
+	    $('#org tbody').append(template({ email: s.mail['t:EmailAddress'], name: s.name, padding: l * 3, level: l, id: i }))
+	    $('#' + i).append('<td>'+ s.title + '</td>');
+	    $('#' + i).append('<td>'+ s.mail['t:EmailAddress'] + '</td>');
+	}
+	l++;
+	_.each(s.reports, function(e, i){
+	    var u = url.clone();
+	    var parent_id = u.query(true).name.replace(/\W/g, '_');
+	    var email = e['t:EmailAddress']
+	    if (email) {
+		var id = email.replace(/\W/g, '_');
+		u.setSearch('name', email);
+		var parent = $('#' + parent_id).first()
+		
+		if (parent.size()) {
+		    // parent.append('<td>foo</td>');
+		    parent.after(template({ email: email, name: email, padding: l * 3, level: l, id: id }))
+		    recurse_down(u, parent, l);
+		} else {
+		    $('#org tbody').append(template({ email: email, name: email, padding: l * 3, level: l, id: id }))
+		    recurse_down(u, parent, l);
+		} 
+	    };
+	});
+    });
+};
+
+$(function(){
+    var s = new Date();
+    console.log(s)
+    var uri = new URI();
+    uri.path('<%= url_for('/r') %>');
+    uri.addSearch("f", "json");
+    recurse_down(uri, undefined, 0);
+})
+</script>
+% }

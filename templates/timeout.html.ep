@@ -1,0 +1,7 @@
+% layout 'default';
+<div class="col-lg-12" style="min-height:12em"></div>
+<div class="col-lg-4 col-xs-offset-4">
+  <h1>Your session has expired!</h1>
+  <h3>it happens automatically after 60 minutes of no activity, for your own safety</h3>
+  <h2>you can log back in <a href="/login">here</a></h2>
+</div>

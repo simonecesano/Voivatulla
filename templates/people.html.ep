@@ -1,0 +1,148 @@
+% layout 'default';
+%= javascript '/static/table2csv.js'
+<style>
+  td { font-size: small; white-space: nowrap; }
+</style>
+<script id="person-template" type="text/x-handlebars-template">
+  <tr>
+    <td class="name">{{ t:Contact/t:DisplayName }}</td>
+    <td class="title">{{ t:Contact/t:JobTitle }}</td>
+    <td><table>
+	<tr><td class="department">{{ t:Contact/t:Department }}</td></tr>
+	<tr><td class="location">{{ t:Contact/t:PhysicalAddresses/t:Entry/t:City }}</td></tr>
+	<tr><td class="email">{{ t:Mailbox/t:EmailAddress }}</td></tr>
+    </table></td>
+    <td><i class="fa fa-times-circle remove"></i></td>
+  </tr>
+</script>
+<script id="notfound-template" type="text/x-handlebars-template">
+  <tr class="warning">
+    <td class="query">{{ query }}</td>
+    <td colspan="2">not found</td>
+    <td><i class="fa fa-times-circle remove"></i></td>
+  </tr>
+</script><script>
+    $(function(){
+	$.sessionTimeout({
+	    warnAfter: 55 * 60 * 1000,
+	    redirAfter: 59 * 60 * 1000,
+	    logoutUrl: '/logout',
+	    redirUrl: '/timeout',
+	    keepAliveUrl: '/keepalive'
+	});
+	$(document).on('click', '.remove', function(e){
+	    e.stopPropagation();
+	    var d = $(this).closest('tr')
+	    deleted_rows.push({ row: d, prev: d.prev() })
+	    d.remove()
+	});
+	$("#export").click(function (event) {
+	    var outputFile = 'export';
+	    outputFile = outputFile.replace('.csv','') + '.csv'
+	    exportTableToCSV.apply(this, [$('#results_table'), outputFile]);
+	});
+	
+	var deleted_rows = [];
+	new Clipboard('#email',
+		      { text: function(){ return $('.name').map(function(){ return $(this).parent().find('.email').text() }).toArray().join('; ') } });
+
+	new Clipboard('#names',
+		      { text: function(){ return $('.name')
+					  .map(function(){ return $(this).text() || $(this).parent().find('.email').text() }).toArray().join('; ') } });
+
+	
+
+	$('#store').click(function(){
+	    var s = $('.name').map(function(){ return { name: $(this).text(), email: $(this).parent().find('.email').text() } }).toArray()
+	    localStorage.setItem('names', JSON.stringify(s));
+	});
+	
+	var listener = new window.keypress.Listener();
+	listener.simple_combo("cmd z", function() {
+	    if (deleted_rows.length) {
+		var d = deleted_rows.pop();
+		d.prev.after(d.row)
+	    }
+ 	});
+	$('#wait, #results').hide();
+	var found_template = Handlebars.compile($('#person-template').html());
+	var not_found_template = Handlebars.compile($('#notfound-template').html());
+	
+	$('#search').click(function(){
+	    console.log(moment().format());
+	    $('#search_nav').hide()
+	    $('form').hide();
+	    $('#wait, #results').show();
+	    var names = _.chain($('#names').val().split(/\n|;\s*/)).filter(function(i){ return i.match(/\w/) });
+	    var deferreds = names.map(function(query, e){
+		return $.get('<%= url_for("/") %>',
+			     { q: query },
+			     function(d) {
+				 if (d.length) {
+				     _.each(d, function(e, i){ e.query = query; $('#wait').after(found_template(e)) });
+				 } else {
+				     $('#wait').after(not_found_template({ query: query }))
+				 }
+			     }
+			    ).fail(function(){ $('#wait').after(not_found_template({ query: i })) });
+	    }).value();
+	    $.when.apply($, deferreds)
+		.then(function(){
+		    var a = arguments.length > 1 ? _.map(Array.from(arguments), function(i){ return i[0] }) : [ arguments[0] ];
+		    console.log(moment().format())
+		    $('#wait').remove();
+		    $('#search_nav').show();  
+		})
+	})
+    });
+</script>
+<div class="col-lg-8 col-xs-offset-2"><h1 class="page-header">Search for names</h1></div>
+<div class="col-lg-8 col-xs-offset-2">
+  <form>
+    <div class="form-group">
+      <label for="meeting_subject">Names</label>
+      <textarea id="names" class="form-control" rows="4"></textarea>
+    </div>
+    <button id="search" type="button" class="btn btn-default">Submit</button>
+  </form>
+  <div id="results">
+    <nav id="search_nav" class="navbar navbar-default">
+      <div class="container-fluid">
+	<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+	  <ul class="nav navbar-nav">
+	    <li class="dropdown">
+	      <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
+		 aria-expanded="false">copy<span class="caret"></span></a>
+	      <ul class="dropdown-menu" aria-labelledby="copymenu">
+		<li><a id="email" href="#">email addresses</a></li>
+		<li><a id="names" href="#">names</a></li>
+	      </ul>
+	    </li>
+	    <!-- end of copy dropdown  -->
+	  <li><a id="store" href="#">store</a></li>
+	  <li><a id="export" href="#">export</a></li>
+	  <li><a id="search" href="<%= url_for('/') %>">search again</a></li>
+	  </ul>
+	</div>
+      </div>
+    </nav>
+    <table class="table table-striped" id="results_table">
+      <thead>
+	<tr>
+	  <th>name</th>
+	  <th>department</th>
+	  <th>job title | location | email</th>
+	  <th></th>
+	</tr>
+      </thead>
+      <tbody>
+	<tr id="wait">
+	  <td><i class="fa fa-refresh fa-spin fa-fw"></i></td>
+	  <td><i class="fa fa-refresh fa-spin fa-fw"></i></td>
+	  <td><i class="fa fa-refresh fa-spin fa-fw"></i></td>
+	  <td><i class="fa fa-refresh fa-spin fa-fw"></i></td>
+	</tr>
+      </tbody>
+    </table>
+  </div>
+</div>

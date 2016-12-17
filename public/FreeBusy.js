@@ -1,5 +1,11 @@
-// var moment = require('moment');
-// var _ = require("underscore");
+// {
+//     freebusies : [ { email : "", freebusy : [ array of int ] } ],
+//     emails     : [ "" ],
+//     summary    : [ [ array of int ] ],
+//     start      : moment,
+//     end        : moment,
+//     interval   : int
+// } 
 
 var FreeBusy = function (start, end, interval) {
     this.times = [];
@@ -13,7 +19,7 @@ var FreeBusy = function (start, end, interval) {
     this.interval = interval;
     this.params = { start: this.start.format(), end: this.end.format() , interval: this.interval };
     
-    var duration = moment.duration(this.end.diff(this.start));
+    // this.duration = moment.duration(this.end.diff(this.start));
 
     var t = moment(this.start);
     while (t < this.end) {
@@ -32,11 +38,12 @@ FreeBusy.prototype.add = function(freebusy) {
     if(d.freebusy.length > f.summary.length) {
 	// console.log("truncating freebusy of " + d.email);
     };
+    // console.log(d.freebusy);
     d.freebusy = d.freebusy.substring(0, f.summary.length).split('');
     f.emails.push(d.email);
     f.freebusies.push(d);
     // console.log(d.freebusy.length);
-    // console.log(f.summary.length);
+
     _.each(d.freebusy, function(e, i){
 	try { 
 	    f.summary[i].push(e)
@@ -82,15 +89,17 @@ FreeBusy.prototype.params = function(){
 
 FreeBusy.prototype.byTime = function() {
     var fb = this;
-    // console.log(fb.summary);
+    // console.log(fb);
 
     var p = _.map(fb.summary, function(e, i) {
-	var p = _.chain(e).filter(function(t){ return t == 0 }).value().length / e.length
+	var p = _.chain(e).filter(function(t){ return t == 0 || t == "0" }).size().value()
+	p = p / e.length;
 	return { time: fb.times[i].format(), availability: p }
     })
-    _.each(p, function(e) {
+    _.each(p, function(e, i) {
 	e.availability_perc = Math.round(e.availability * 100, 0)
 	e.time_of_day = moment(e.time).format('HH:mm');
+	// if (i < 20) { console.log(e) }
     });
     var days = _.groupBy(p, function(k){
 	return moment(k.time).format('YYYY-MM-DD')
@@ -106,13 +115,15 @@ FreeBusy.prototype.byTime = function() {
 
 FreeBusy.prototype.availability = function() {
     var f = this;
-    var t = moment(arguments[0]);
-    var p = _.map(f.summary, function(e) {
-	return _.chain(e).filter(function(t){ return t == 0 }).value().length / e.length
-    })
-    var s =_.object(f.times, p)
-    var i = f.slot(t);
-    return _.map(f.freebusies, function(e){ return { email: e.email, freebusy: e.freebusy[i] } })
+    if (moment(arguments[0]).isValid()) {
+	var t = moment(arguments[0]);
+	var p = _.map(f.summary, function(e) {
+	    return _.chain(e).filter(function(t){ return t == 0 }).value().length / e.length
+	})
+	var s =_.object(f.times, p)
+	var i = f.slot(t);
+	return _.map(f.freebusies, function(e){ return { email: e.email, freebusy: e.freebusy[i] } })
+    } 
 }
 
 FreeBusy.prototype.slot = function() {
@@ -123,12 +134,25 @@ FreeBusy.prototype.slot = function() {
 
 FreeBusy.prototype.hours = function() {
     var f = this;
-    return _.chain(f.times).map(function(e){ return e.format('HH:mm') }).uniq().sort().value();
+    return _.chain(f.times)
+	.filter(function(e){
+	    return e.hour() >= 8 && e.hour() <= 19;
+	})
+	.map(function(e){
+	// console.log(e);
+	return e.format('HH:mm')
+    }).uniq().sort().value();
 }
 
 FreeBusy.prototype.days = function() {
     var f = this;
-    return _.chain(f.times).map(function(e){ return e.format('YYYY-MM-DD') }).uniq().value();
+    return _.chain(f.times)
+	.filter(function(e){
+	    return e.day() >= 1 && e.day() <= 5;
+	})
+	.map(function(e){ return e.format('YYYY-MM-DD') })
+	.uniq()
+	.value();
 }
 
 

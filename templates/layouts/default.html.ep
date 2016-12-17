@@ -1,0 +1,41 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <title><%= title %></title>
+    %= javascript 'https://code.jquery.com/jquery-2.2.0.min.js'
+    %= javascript 'https://code.jquery.com/ui/1.11.4/jquery-ui.min.js'
+    %= javascript 'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js'
+    %= javascript 'https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js'
+    %= stylesheet 'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css'
+    %= stylesheet 'https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css'
+    %= javascript 'https://cdnjs.cloudflare.com/ajax/libs/sammy.js/0.7.6/sammy.min.js'
+    %= javascript 'https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.0.5/handlebars.min.js'
+    %= javascript 'https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.13.0/moment.js'
+    %= javascript 'https://cdnjs.cloudflare.com/ajax/libs/keypress/2.1.4/keypress.min.js'
+    %= javascript 'https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/1.5.12/clipboard.min.js'
+    %= javascript 'https://cdnjs.cloudflare.com/ajax/libs/js-cookie/2.1.2/js.cookie.min.js'
+    %= javascript '/static/jquery.sessionTimeout.js'
+    %= javascript '/static/js/bootstrap-datetimepicker.min.js'
+    %= stylesheet '/static/css/bootstrap-datetimepicker.css'
+    <style>
+      html, body { height: 100%; }
+      body { padding-top: 64px; }
+      div.bar { height:100% }
+      .sidebar { width: 65px; background-color: black }
+      .spacer { width: 65px }
+    </style>
+    <meta name="generator"
+	  content="<%= app->moniker %>">
+  </head>
+  <body>
+    <div class="sidebar">
+    </div>
+    <div class="spacer"></div>
+    <div class="container-fluid">
+      <div class="row">
+	<%= content %>
+      </div>
+    </div>
+    <div class="spacer"></div>
+  </body>
+</html>

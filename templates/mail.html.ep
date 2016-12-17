@@ -1,0 +1,166 @@
+% layout 'default';
+%= javascript 'https://cdnjs.cloudflare.com/ajax/libs/URI.js/1.18.1/URI.js'
+%= javascript 'https://cdnjs.cloudflare.com/ajax/libs/pagedown/1.0/Markdown.Converter.js'
+%= javascript 'https://cdnjs.cloudflare.com/ajax/libs/defiant.js/1.4.0/defiant.min.js'
+%= include 'navbars/mail'
+<div class="col-lg-8 col-xs-offset-2"><h3 class="page-header">Send mail</h3></div>
+<div class="col-lg-8 col-xs-offset-2">
+  <form method="POST">
+  <nav id="search_nav" class="navbar navbar-default">
+    <div class="container-fluid">
+      <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+	<ul class="nav navbar-nav">
+	  <li class="dropdown">
+	    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
+	       aria-expanded="false"><i class="fa fa-envelope" aria-hidden="true"></i>&emsp;send<span class="caret"></span></a>
+	    <ul class="dropdown-menu" aria-labelledby="copymenu">
+	      <li><a id="view" href="#">view mail</a></li>
+	    </ul>
+	  </li>
+	  
+	</ul>
+      </div>
+    </div>
+  </nav>
+  <ul class="nav nav-tabs">
+    <li role="presentation" class="nav active"><a  data-toggle="tab" href="#mailtab">Mail</a></li>
+    <li role="presentation" class="nav"><a  data-toggle="tab" href="#peopletab">People</a></li>
+  </ul>
+  <div class="tab-content">
+    <div class="tab-pane active" id="mailtab">
+      <div class="form-group">
+	<label for="names">Subject</label>
+	<textarea name="subject" id="subject" class="form-control" rows="1"></textarea>
+      </div>
+      <div class="form-group">
+	<label for="names">Addressees</label>
+	<textarea name="emails" id="emails" class="form-control" rows="2"></textarea>
+      </div>
+      <div class="form-group">
+	<label for="text">Template</label>
+	<textarea name="template" id="template" class="form-control" rows="8"></textarea>
+      </div>
+      <div class="row">
+      </div>
+      <div class="form-group">
+	<hr />
+	<button id="check" type="button" class="btn btn-default">Check</button>
+      </div>
+    </div>
+    <div class="tab-pane" id="peopletab" style="column-count:4">
+      <script id="person_template" type="text/x-handlebars-template">
+	<tr class="person">
+	  <td>{{ email }}</td>
+	  <td>{{ name }}</td>
+	  <td>{{ surname }}</td>
+	</tr>
+      </script>
+      <script id="person_notfound" type="text/x-handlebars-template">
+	<tr class="person">
+	  <td>{{ email }}</td>
+	  <td colspan="2">not found</td>
+	</tr>
+      </script>
+      <table id="names_table" class="table table-striped">
+	<tbody>
+	  <tr>
+	    <th>email</th>
+	    <th>name</th>
+	    <th>surname</th>
+	  </tr>
+	</tbody>
+      </table>
+    </div>
+  </div>
+  </form>
+</div>
+<script>
+    $(function(){
+	var emails = [];
+	var curr_email = 0;
+	$('#search_nav').hide();
+	console.log($('#next'))
+	$('#check').click(function(){
+	    template = Handlebars.compile($("#template").val());
+	    console.log(emails[curr_email]);
+	    var text = template(emails[curr_email])
+	    var converter = new Markdown.Converter();
+	    var html = converter.makeHtml(text);	  
+	    modal = Handlebars.compile($("#html-template").html());
+	    $('#html_modal').html(modal({ text: html })).modal()
+	    $('#next').on('click', function(){
+		curr_email++;
+		if (curr_email >= emails.length) {
+		    curr_email = 0;
+		    console.log(curr_email)
+		    $('#html_modal').modal('hide')
+		} else {
+		    $('#check').trigger('click');
+		    console.log(curr_email)
+		}
+	    })
+	    $('#send_one').on('click', function(){
+		var u = URI('<%= url_for('/send') %>');
+		$.post(u.toString(), { html: $('#mail_body').html(), email: emails[curr_email].email, subject: $('#subject').val() }, function(d){
+		    console.log(d);
+		})
+		$('#next').trigger('click');
+		
+	    })
+	});
+	
+	$('#emails').change(function(){
+	    emails = []
+	    var emails_list = $(this).val().replace(/^\s*;*|\s;*\s*$/, "").split(/; /);
+	    emails_list = _.map(emails_list, function(e, i) {
+		return e
+	    })
+	    row = Handlebars.compile($("#person_template").html());
+	    err = Handlebars.compile($("#person_notfound").html());
+	    $('#names_table .person').remove()
+	    _.each(emails_list, function(e, i){
+		var email = e;
+		console.log(e)
+		var u = URI('<%= url_for('/info') %>');
+		u.search({ email: e })
+		$.get(u.toString(), function(d){
+		    $('#names_table tbody').append(row(d))
+		    console.log(d);
+		    emails.push(d);
+		}).fail(function() {
+		    $('#names_table tbody').append(err({ email: e }))
+		})
+	    });
+	});
+	$('#emails').trigger('change');
+    })
+</script>
+<!-- ------------------------ -->
+<!-- AVAILABILITY MODAL       -->
+<!-- ------------------------ -->
+<div id="html_modal" class="modal fade" tabindex="-1" role="dialog"></div>
+<script id="html-template" type="text/x-handlebars-template">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+	<h4 class="modal-title">This is what your email will look like</h4>
+      </div>
+      <div class="modal-body" id="mail_body">
+	{{#if done }}
+	<h1>Done</h1>
+	{{else}}
+	{{{ text }}}
+	{{/if}}
+      </div>
+      <div class="modal-footer">
+	{{#unless done }}
+        <button type="button" class="btn btn-default" id="next">Next</button>
+        <button type="button" class="btn btn-default" id="edit">Edit</button>
+        <button type="button" class="btn btn-default" id="send_one">Send</button>
+	{{/unless}}
+        <button type="button" class="btn btn-default" id="dismiss" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</script>

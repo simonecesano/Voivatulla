@@ -1,0 +1,230 @@
+% layout 'default';
+%= stylesheet '/static/brewer.css'
+%= javascript '/static/freebusy.js'
+%= javascript 'https://cdnjs.cloudflare.com/ajax/libs/humane-js/3.2.2/humane.min.js',
+%= stylesheet 'https://cdnjs.cloudflare.com/ajax/libs/humane-js/3.2.2/themes/libnotify.min.css'
+%= javascript 'https://cdnjs.cloudflare.com/ajax/libs/URI.js/1.18.1/URI.js'
+%= include 'navbars/free'
+<style>
+  #results td { padding: 3px }
+  #results tr { border-bottom: thin solid gainsboro } 
+  .bar_outer {
+      float: left;
+      height: 100px;
+      margin: 1px;
+      padding: 0px;
+      width: 24px;
+      text-align: left;
+      position:relative;                 /* added */
+      border-top: solid thin gainsboro;
+  }
+  .bar_inner {
+      position:absolute;                  /* added */
+      bottom:0;                           /* added */
+      left:0;                             /* added */
+      width: 24px;
+      margin: 1px;
+      border: thin white solid;
+      /* background-color:red; */
+  }
+  .bar_line {
+      position:absolute;                  /* added */
+      left:0;                             /* added */
+      width: 24px;
+      height: 25px;
+      margin: 1px;
+      border-top: thin white solid;
+      background-color:none;
+    z-index : 10;
+    }
+  .line_1 { bottom: 0 }
+  .line_2 { bottom:25 }
+  .line_3 { bottom:50 }
+  .line_4 { bottom:50 }
+  
+  .time_of_day {
+      font-size: 8px
+  }
+</style>
+<script>
+Handlebars.registerHelper('freebusy-at-time', function() {
+    var args = [], options = arguments[arguments.length - 1];
+    var fb = arguments[0], day = arguments[1], hour = arguments[2];
+    if (arguments[3] > 0) {
+	if (fb[day][hour]) {
+	    return Math.round(fb[day][hour].availability_perc / arguments[3])
+	} else {
+	    return 0
+	};
+    } else {
+	if (fb[day][hour]) { return fb[day][hour].availability_perc } else { return 0 };
+    }
+});
+Handlebars.registerHelper('moment-format', function() {
+    var date = arguments[0], format = arguments[1];
+    // if (arguments.length > 2) { date = moment(date, arguments[2]) } else { date = moment(date) }
+    date = moment(date)
+    return date.format(format);
+});
+Handlebars.registerHelper('to-array', function() {
+    var n = arguments[0], l = arguments[1];
+    return n
+});
+
+</script>
+<script id="day-template" type="text/x-handlebars-template">
+    <table>
+    {{#each days as |day|  }}
+    <tr>
+    <td>{{ moment-format day 'DD-MMM, ddd' }}</td>
+      {{#each ../hours as |hour| }}
+      <td>
+	<div class="time_of_day">{{ hour }}</div>
+	<div data-toggle="tooltip" data-delay="50" data-placement="top" data-time="{{ day }} {{ hour }}"
+	     title="{{ hour }} {{ day }} {{ freebusy-at-time ../../by_time day hour }}%" class="bar_outer">
+	  <div class="bar_inner q{{ freebusy-at-time ../../by_time day hour 12 }}-8" style="height:{{ freebusy-at-time ../../by_time day hour }}px"></div>
+	  <div class="bar_line line_1"></div>
+	  <div class="bar_line line_2"></div>
+	  <div class="bar_line line_3"></div>
+	</div>
+      </td>
+      {{/each}}
+    </tr>
+    {{/each}}
+  </table>
+</script>
+<script id="bar-template" type="text/x-handlebars-template">
+  <div class="progress">
+    <div id="thebar" class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="{{ width }}" style="width: {{ width }}%">
+      <span class="sr-only">{{ width }}% Complete</span>
+    </div>
+  </div>
+</script>
+<script id="person-template" type="text/x-handlebars-template">
+  <tr><td>{{ name }}</td><td style="width:120px"><div class="q{{ class }}-8" style="width:{{ availability }}px">{{ availability }}</div></td></tr>
+</script>
+
+<script>
+      $(function(){
+	  $.sessionTimeout({
+	      warnAfter: 55 * 60 * 1000,
+	      redirAfter: 59 * 60 * 1000,
+	      logoutUrl: '/logout',
+	      redirUrl: '/timeout',
+	      keepAliveUrl: '/keepalive'
+	  });
+	  var u = new URI();
+	  u.path(u.path() + '.json');
+	  console.log(u.toString());
+	  
+	  var start = moment().minutes(0).seconds(0);
+	  $('#start input').val(start);
+	  var end   = moment(start).add(21, 'days')
+	  $('#end input').val(end);
+	  
+	  var source   = $("#day-template").html();
+	  var template = Handlebars.compile(source);
+	  var fb = new FreeBusy(start.format(), end.format(), 30);
+	  fb.workingHours(8, 18, [1, 2, 3, 4, 5]);
+	  humane.timeout = 1000; 
+	  var bar = Handlebars.compile($("#bar-template").html());
+	  var availability = Handlebars.compile($("#availability-template").html());
+	  var person_template = Handlebars.compile($("#person-template").html());
+      
+	  $('#chart').html(template({ days: fb.days(), hours: fb.hours(), by_time: fb.byTime() }))
+	  $('form').hide();
+	  $('#wait, #results').show();
+
+	  var names;
+	  $.get(u.toString(), function(d) {
+	      var names = _.chain(d.names);
+	      var deferreds = names.map(function(i, e){
+		  var params = _.clone(fb.params); params.email = i;
+		  return $.get('<%= url_for("/") %>',
+			       params,
+			       function(d) {
+				   fb.add(d)
+				   // console.log( fb.byTime() );
+				   $('#chart').html(template({ days: fb.days(), hours: fb.hours(), by_time: fb.byTime() }))
+				   var w = Math.floor(fb.emails.length / names.size().value() * 100)
+				   $('#bar').html(bar({ width: w }));
+				   if (d.freebusy.length) {
+				       var a = Math.round(_.chain(d.freebusy).filter(function(e){ return e == 0 }).size() / d.freebusy.length * 100)
+				       var q = Math.floor(a / 12.5) + 1
+				       // $('#people').append('' + i + ' <span class="q' + Math.floor(a / 20) + '"> ' + a + '%</span><br />')
+				       $('#people table').append(person_template({ name: i, availability: a, 'class': q  }))
+				   } else {
+				       $('#people table').append(person_template({ name: i, availability: 'failed' }))
+				   }
+				   
+			       }
+			      ).fail(function(){
+				  $('#people').append("" + i + ' failed<br />')
+			      });
+	      }).value();
+	      $.when.apply($, deferreds).then(function(data, textStatus, jqXHR){
+		  // console.log(fb)
+		  $('#bar').html('');
+		  $('#chart').html(template({ days: fb.days(), hours: fb.hours(), by_time: fb.byTime() }))
+		  $('.bar_outer').on('click', function(){
+		      var a = fb.availability($(this).data('time'));
+		      var free = _.chain(a).filter(function(e){ return e.freebusy == "0" }).map(function(e){ return e.email }).value();
+		      var busy = _.chain(a).filter(function(e){ return e.freebusy != "0" }).map(function(e){ return e.email }).value();
+		      $('#availability_modal').html(availability({
+			  free: free.join('; '),
+			  busy: busy.join('; '),
+			  free_count: free.length,
+			  busy_count: busy.length,
+			  time: $(this).data('time')
+		      }));
+		      $('#availability_modal').modal()
+		  });
+	      });
+	  })
+      })
+</script>
+<div class="col-lg-8 col-xs-offset-2">
+  <div id="results">
+    <div class="barchart" id="bar">
+    </div>
+    <ul class="nav nav-tabs">
+      <li role="presentation" class="nav active"><a  data-toggle="tab" href="#chart">Availability timeline</a></li>
+      <li role="presentation" class="nav"><a  data-toggle="tab" href="#people">Availability by person</a></li>
+    </ul>
+    <div class="tab-content">
+      <div class="tab-pane active" id="chart">
+      </div>
+      <div class="tab-pane" id="people" style="column-count:4">
+	<table>
+	  <tr>
+	    <td>Person</td>
+	    <td style="width:120px">Availability</td>
+	  </tr>
+      </table>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- ------------------------ -->
+<!-- AVAILABILITY MODAL       -->
+<!-- ------------------------ -->
+<div id="availability_modal" class="modal fade" tabindex="-1" role="dialog"></div>
+<script id="availability-template" type="text/x-handlebars-template">	
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+	<h4 class="modal-title">Availability at {{ time }}</h4>
+      </div>
+      <div class="modal-body">
+	<ul>
+      <li><strong>{{ free_count }} free: </strong>{{ free }}</li>
+	  <li><strong>{{ busy_count }} busy: </strong>{{ busy }}</li>
+	</ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</script>

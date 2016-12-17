@@ -1,0 +1,41 @@
+% layout 'default';
+<style>
+  body { background-color: #222222 }
+  * { color: #dddddd }
+  a { color: #dddddd; text-decoration: none; outline:0 }
+  a:visited { color: #dddddd; outline:0 }
+  a:hover { color: darkorange }
+  div { text-align: center; }
+  .fa { font-size: 144pt }
+</style>
+<div class="row" style="height:6em"></div>
+<div class="row">
+  <div class="col-lg-4">
+    <a href="/a/v1/">
+    <i class="fa fa-calendar" aria-hidden="true"></i>
+    <h1>Free/Busy</h1>
+    </a>
+  </div>
+  <div class="col-lg-4">
+    <a href="/l/v1/">
+    <i class="fa fa-envelope-o" aria-hidden="true"></i>
+    <h1>Mass mail</h1>
+    </a>
+  </div>
+  <div class="col-lg-4">
+    <a href="/w/v1/">
+    <i class="fa fa-user" aria-hidden="true"></i>
+    <h1>Find people</h1>
+    </a>
+  </div>
+
+</div>
+<div class="row" style="height:6em"></div>
+<div class="row">
+  <div class="col-lg-4">
+    <a href="/t/v1/">
+    <i class="fa fa-sitemap" aria-hidden="true"></i>
+    <h1>Org trees</h1>
+    </a>
+  </div>
+</div>
