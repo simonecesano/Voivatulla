@@ -1,4 +1,5 @@
 % layout 'default';
+%= include 'timeoutjs'
 %= stylesheet '/static/brewer.css'
 %= javascript '/static/freebusy.js'
 %= javascript 'https://cdnjs.cloudflare.com/ajax/libs/humane-js/3.2.2/humane.min.js',
@@ -115,16 +116,6 @@ Handlebars.registerHelper('to-array', function() {
 		return e.email
 	    }).value().join("\n"))
 	});
-
-	
-	$.sessionTimeout({
-	    warnAfter: 55 * 60 * 1000,
-	    redirAfter: 59 * 60 * 1000,
-	    logoutUrl: '/logout',
-	    redirUrl: '/timeout',
-	    keepAliveUrl: '/keepalive'
-	});
-
 	var start = moment().minutes(0).seconds(0);
 	$('#start input').val(start);
 	var end   = moment(start).add(21, 'days')

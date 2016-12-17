@@ -15,7 +15,8 @@ get '/' => sub {
 
 get '/login' => sub {
     my $c = shift;
-    $c->render(template => 'login');
+    $c->session('referrer' => Mojo::URL->new($c->req->headers->referrer)->path);
+    $c->render(template => 'login')
 };
 
 post '/login' => sub {
@@ -25,6 +26,7 @@ post '/login' => sub {
     if ($res->is_success) {
 	$c->session({ user => $c->param('user') });
 	$c->session({ password => $c->param('password') });
+	$c->session('referrer', undef);
 	my $ref = $c->req->url->clone->path($c->param('referrer'))->to_abs;
 	$c->redirect_to($ref || $c->url_for('/'));
     } else {

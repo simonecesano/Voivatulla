@@ -12,13 +12,7 @@
       <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-2">
 	<ul class="nav navbar-nav">
 	  <li ><a href="/u/v1" >Home</a></li>
-          <li class="dropdown">
-            <a class="dropdown-toggle" data-toggle="dropdown" href="#">Login <span class="caret"></span></a>
-            <ul class="dropdown-menu">
-              <li><a href="/u/v1/connect">Google</a></li>
-	      <li><a href="/e/v1/login">Exchange</a></li>
-            </ul>
-          </li>
+	  %= include 'navbars/login'
 	</ul>
       </div>
     </div>

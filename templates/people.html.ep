@@ -1,5 +1,7 @@
 % layout 'default';
 %= javascript '/static/table2csv.js'
+%= include 'timeoutjs'
+%= include 'navbars/people'
 <style>
   td { font-size: small; white-space: nowrap; }
 </style>
@@ -21,15 +23,9 @@
     <td colspan="2">not found</td>
     <td><i class="fa fa-times-circle remove"></i></td>
   </tr>
-</script><script>
+</script>
+<script>
     $(function(){
-	$.sessionTimeout({
-	    warnAfter: 55 * 60 * 1000,
-	    redirAfter: 59 * 60 * 1000,
-	    logoutUrl: '/logout',
-	    redirUrl: '/timeout',
-	    keepAliveUrl: '/keepalive'
-	});
 	$(document).on('click', '.remove', function(e){
 	    e.stopPropagation();
 	    var d = $(this).closest('tr')
