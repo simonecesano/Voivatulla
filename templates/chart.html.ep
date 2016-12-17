@@ -1,6 +1,6 @@
 % layout 'default';
 %= stylesheet '/static/brewer.css'
-%= javascript '/static/freebusy.js'
+%= javascript '/static/FreeBusy.js'
 %= javascript 'https://cdnjs.cloudflare.com/ajax/libs/humane-js/3.2.2/humane.min.js',
 %= stylesheet 'https://cdnjs.cloudflare.com/ajax/libs/humane-js/3.2.2/themes/libnotify.min.css'
 %= javascript 'https://cdnjs.cloudflare.com/ajax/libs/URI.js/1.18.1/URI.js'
