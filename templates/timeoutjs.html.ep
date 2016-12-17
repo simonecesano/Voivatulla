@@ -1,0 +1,12 @@
+% stash 'to' => 5;
+<script>
+  $(function(){
+      $.sessionTimeout({
+	  warnAfter:  <%= (stash 'to') - 1 %> * 60 * 1000,
+	  redirAfter: <%= (stash 'to') %> * 60 * 1000,
+	  logoutUrl:     '/u/v1/logout',
+	  redirUrl:      '/u/v1/timeout',
+	  keepAliveUrl:  '/u/v1/keepalive'
+      });
+  })
+</script>
