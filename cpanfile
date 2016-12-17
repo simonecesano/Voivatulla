@@ -1,4 +1,5 @@
 requires "Want";
+requires 'DateTime';
 
 requires "Digest::MD5";
 requires "MIME::Types";
