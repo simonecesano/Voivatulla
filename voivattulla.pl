@@ -7,6 +7,7 @@ Voivatulla searches for free/busy status on EWS and shows the best slots for set
 Works like this:
 
 -> post a request -> cache the params -> redirect to an md5 url -> get the params from the cache -> request freebusy statuses
+
     
 =cut
     
