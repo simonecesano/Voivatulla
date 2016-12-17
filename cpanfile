@@ -1,3 +1,5 @@
+requires "Want";
+
 requires "Digest::MD5";
 requires "MIME::Types";
 
