@@ -3,16 +3,14 @@ use Mojolicious::Lite;
 
 get '/' => sub {
   my $c = shift;
-  $c->render(template => 'index');
+  $c->render(template => 'error');
 };
 
 app->start;
 __DATA__
 
-@@ index.html.ep
-% layout 'default';
+@@ error.html.ep
 % title 'Error';
 <h1>404</h1>
 There was an error
-<%= link_to 'home' => '#' %>.
 

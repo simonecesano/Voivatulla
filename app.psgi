@@ -69,6 +69,8 @@ sub make_mount {
     mount $mount => builder {
     	my $s = Mojo::Server::PSGI->new;
     	$s->load_app($app);
+	unshift @{$s->app->renderer->paths}, ($s->app->renderer->paths->[0] . '/' . ($app =~ s/\.pl//r));
+	# dump $s->app->renderer->paths;
 	$s->app->hook(before_dispatch => sub {
 			  my $c = shift;
 			  unless (($c->session('user') && $c->session('password')) || ($mount eq $config->{login})) {

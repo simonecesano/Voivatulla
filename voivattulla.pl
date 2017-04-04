@@ -7,7 +7,6 @@ Voivatulla searches for free/busy status on EWS and shows the best slots for set
 Works like this:
 
 -> post a request -> cache the params -> redirect to an md5 url -> get the params from the cache -> request freebusy statuses
-
     
 =cut
     
@@ -61,14 +60,13 @@ get '/' => sub {
 	my $start = $c->param('start') || DateTime->today()->iso8601() . 'Z';
 	my $end   = $c->param('end')   || DateTime->today()->add(days => 70)->iso8601() . 'Z';
 
-	app->log->info(dump $c->req->params->to_hash);
-	app->log->info(dump $c->req->params->to_string);
+	# app->log->info(dump $c->req->params->to_hash);
+	# app->log->info(dump $c->req->params->to_string);
 
 	my $json;
-	if (0) {
-	# if (my $json = app->cache->get($c->req->params->to_string)) {
-	    app->log->info('pulling from cache');
-	    app->log->info(dump $json);
+	if (my $json = app->cache->get($c->req->params->to_string)) {
+	    # app->log->info('pulling from cache');
+	    # app->log->info(dump $json);
 	    $c->render(json => $json);
 	    return;
 	} else {
@@ -79,7 +77,7 @@ get '/' => sub {
 	    } else {
 		if ($res->is_success) {
 		    my $d = $res->xpath('//*[local-name()=\'MergedFreeBusy\']');
-		    app->log->info($d);
+		    # app->log->info($d);
 		    $c->render(json => { freebusy => $d, email => $email });
 		} else {
 		    $c->render(json => { error => 400, message => $res->response->message, xml => $res->xml });
